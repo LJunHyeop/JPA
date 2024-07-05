@@ -76,7 +76,7 @@ public class MyOAuth2UserService extends DefaultOAuth2UserService {
             SignUpPostReq signUpParam = new SignUpPostReq();
             signUpParam.setProviderType(signInProviderType);
             signUpParam.setUid(oAuth2UserInfo.getId());
-            signUpParam.setNm(oAuth2User.getName());
+            signUpParam.setNm(oAuth2UserInfo.getName());
             signUpParam.setPic(oAuth2UserInfo.getProfilePicUrl());
             int result = mapper.signUpPostReq(signUpParam);
             user = new User( signUpParam.getUserId()
