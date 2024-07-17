@@ -3,12 +3,16 @@ package com.green.greengram.user;
 import com.green.greengram.common.AppProperties;
 import com.green.greengram.common.CookieUtils;
 import com.green.greengram.common.CustomFileUtils;
+import com.green.greengram.common.MyCommonUtils;
+import com.green.greengram.exception.CustomException;
+import com.green.greengram.exception.MemberErrorCode;
 import com.green.greengram.security.AuthenticationFacade;
 import com.green.greengram.security.SignInProviderType;
 import com.green.greengram.security.jwt.JwtTokenProviderV2;
 import com.green.greengram.security.MyUser;
 import com.green.greengram.security.MyUserDetails;
 import com.green.greengram.user.model.*;
+import com.green.greengram.entity.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -34,7 +39,7 @@ public class UserServiceImpl implements UserService {
     private final CookieUtils cookieUtils;
     private final AuthenticationFacade authenticationFacade;
     private final AppProperties appProperties;
-
+    private final UserRepository repository;
     //SecurityContextHolder > Context > Authentication(UsernamePasswordAuthenticationToken) > MyUserDetails > MyUser
 
     public int signUpPostReq(MultipartFile pic, SignUpPostReq p){
@@ -45,9 +50,17 @@ public class UserServiceImpl implements UserService {
         String password = passwordEncoder.encode(p.getUpw());
         //String password = BCrypt.hashpw(p.getUpw(),BCrypt.gensalt());
         p.setUpw(password);
-        int result = mapper.signUpPostReq(p);
+        User user = new User();
+        user.setProviderType(SignInProviderType.LOCAL);
+        user.setUid(p.getUid());
+        user.setUpw(password);
+        user.setNm(p.getNm());
+        user.setPic(saveFileName);
+
+        repository.save(user);
+//        int result = mapper.signUpPostReq(p);
         if(pic == null){
-            return result;
+            return 1;
         }
         try{
             String path = String.format("user/%d", p.getUserId());
@@ -58,25 +71,23 @@ public class UserServiceImpl implements UserService {
             e.printStackTrace();
             throw new RuntimeException("실패");
         }
-        return result;
+        return 1;
     }
 
     public SignInPostRes signInPost(HttpServletResponse res, SignInPostReq p) {
         p.setProviderType(SignInProviderType.LOCAL.name());
         //p.setProviderType("LOCAL");
-        User user = mapper.signInPost(p);
+        List<MyUser1Info> userInfo = mapper.signInPost(p);
 
-        if (user == null) {
-            throw new RuntimeException("아이디를 확인해주세요.");
-        }
-        //if (!BCrypt.checkpw(p.getUpw(), user.getUpw())) {
-        if (!passwordEncoder.matches(p.getUpw(), user.getUpw())) {
-            throw new RuntimeException("비밀번호를 확인해주세요.");
+        MyUser1InfoRoles userInfoRoles = MyCommonUtils.convertToUserInfoRoles(userInfo);
+
+        if (userInfo == null || !passwordEncoder.matches(p.getUpw(), userInfoRoles.getUpw())) {
+            throw new CustomException(MemberErrorCode.INCORRECT_ID_PW);
         }
 
         MyUser myUser = MyUser.builder()
-                .userId(user.getUserId())
-                .role("ROLE_USER")
+                .userId(userInfoRoles.getUserId())
+                .roles(userInfoRoles.getRoles())
                 .build();
         /*
         access, refresh token에 myUser(유저pk, 권한정보)를 담는다.
@@ -95,9 +106,9 @@ public class UserServiceImpl implements UserService {
         cookieUtils.setCookie(res, appProperties.getJwt().getRefreshTokenCookieName(), refreshToken, refreshTokenMaxAge);
 
         return SignInPostRes.builder()
-                .userId(user.getUserId())
-                .nm(user.getNm())
-                .pic(user.getPic())
+                .userId(userInfoRoles.getUserId()) // 프로필 사진 띄울때 사용 (프로필 사진 주소에 PK 가 포함됨)
+                .nm(userInfoRoles.getNm())
+                .pic(userInfoRoles.getPic())
                 .accessToken(accessToken)
                 .build();
     }

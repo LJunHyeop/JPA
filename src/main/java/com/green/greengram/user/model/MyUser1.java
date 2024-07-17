@@ -1,14 +1,13 @@
 package com.green.greengram.user.model;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@AllArgsConstructor
+@Setter
 @EqualsAndHashCode
-public class User {
+public class MyUser1 {
     private long userId;
     private String uid;
     private String upw;

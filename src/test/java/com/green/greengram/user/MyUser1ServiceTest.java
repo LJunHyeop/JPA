@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
              "file.directory=D:/2024-01/download/greengram_tdd/"
      }
 )
-class UserServiceTest {
+class MyUser1ServiceTest {
 
     @Value("${file.directory}") String uploadPath;
     @MockBean UserMapper mapper;
@@ -97,32 +97,32 @@ class UserServiceTest {
         req2.setUpw("2323");
         String hashedUpw2 = BCrypt.hashpw(req2.getUpw(), BCrypt.gensalt());
 
-        User user1 = new User(10, req1.getUid(), hashedUpw1, "홍길동1", "사진1.jpg", null, null);
-        given(mapper.signInPost(req1.getUid())).willReturn(user1);
+        MyUser1 myUser11 = new MyUser1(10, req1.getUid(), hashedUpw1, "홍길동1", "사진1.jpg", null, null);
+        given(mapper.signInPost(req1.getUid())).willReturn(myUser11);
 
-        User user2 = new User(20, req2.getUid(), hashedUpw2, "홍길동2", "사진2.jpg", null, null);
-        given(mapper.signInPost(req2.getUid())).willReturn(user2);
+        MyUser1 myUser12 = new MyUser1(20, req2.getUid(), hashedUpw2, "홍길동2", "사진2.jpg", null, null);
+        given(mapper.signInPost(req2.getUid())).willReturn(myUser12);
 
 
         try(MockedStatic<BCrypt> mockedStatic = mockStatic(BCrypt.class)) {
 
-            mockedStatic.when(() -> BCrypt.checkpw(req1.getUpw(), user1.getUpw())).thenReturn(true);
-            mockedStatic.when(() -> BCrypt.checkpw(req2.getUpw(), user2.getUpw())).thenReturn(true);
+            mockedStatic.when(() -> BCrypt.checkpw(req1.getUpw(), myUser11.getUpw())).thenReturn(true);
+            mockedStatic.when(() -> BCrypt.checkpw(req2.getUpw(), myUser12.getUpw())).thenReturn(true);
 
             SignInPostRes res1 = service.signInPost(null, req1);
-            assertEquals(user1.getUserId(), res1.getUserId(), "1. userId 다름");
-            assertEquals(user1.getNm(), res1.getNm(), "1. nm 다름");
-            assertEquals(user1.getPic(), res1.getPic(), "1. pic 다름");
+            assertEquals(myUser11.getUserId(), res1.getUserId(), "1. userId 다름");
+            assertEquals(myUser11.getNm(), res1.getNm(), "1. nm 다름");
+            assertEquals(myUser11.getPic(), res1.getPic(), "1. pic 다름");
 
-            mockedStatic.verify(() -> BCrypt.checkpw(req1.getUpw(), user1.getUpw()));
+            mockedStatic.verify(() -> BCrypt.checkpw(req1.getUpw(), myUser11.getUpw()));
 
             SignInPostRes res2 = service.signInPost(null, req2);
 
-            assertEquals(user2.getUserId(), res2.getUserId(), "2. userId 다름");
-            assertEquals(user2.getNm(), res2.getNm(), "2. nm 다름");
-            assertEquals(user2.getPic(), res2.getPic(), "2. pic 다름");
+            assertEquals(myUser12.getUserId(), res2.getUserId(), "2. userId 다름");
+            assertEquals(myUser12.getNm(), res2.getNm(), "2. nm 다름");
+            assertEquals(myUser12.getPic(), res2.getPic(), "2. pic 다름");
 
-            mockedStatic.verify(() -> BCrypt.checkpw(req2.getUpw(), user2.getUpw()));
+            mockedStatic.verify(() -> BCrypt.checkpw(req2.getUpw(), myUser12.getUpw()));
         }
 
         SignInPostReq req3 = new SignInPostReq();
@@ -139,9 +139,9 @@ class UserServiceTest {
         req4.setUpw("6666");
 
         String hashedUpw4 = BCrypt.hashpw("7777", BCrypt.gensalt());
-        User user4 = new User(100, req4.getUid(), hashedUpw4, "홍길동4", "사진4.jpg", null, null);
+        MyUser1 myUser14 = new MyUser1(100, req4.getUid(), hashedUpw4, "홍길동4", "사진4.jpg", null, null);
 
-        given(mapper.signInPost(user4.getUid())).willReturn(user4);
+        given(mapper.signInPost(myUser14.getUid())).willReturn(myUser14);
         Throwable ex2 = assertThrows(RuntimeException.class, () -> {
             service.signInPost(null, req4);
         }, "비밀번호 다름 예외 처리 안 함");

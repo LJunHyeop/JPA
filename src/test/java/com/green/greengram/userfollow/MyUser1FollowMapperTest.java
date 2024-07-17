@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @MybatisTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 //@Rollback(false)
-class UserFollowMapperTest {
+class MyUser1FollowMapperTest {
 
     @Autowired
     private UserFollowMapper mapper;

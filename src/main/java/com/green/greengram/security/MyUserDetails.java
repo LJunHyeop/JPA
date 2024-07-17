@@ -8,17 +8,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 
 @NoArgsConstructor
 @Setter
 @Getter
+//시큐리티에서 로그인 처리를 할 때 사용하는 객체
 public class MyUserDetails implements UserDetails, OAuth2User {
-
-    private MyUser myUser;
+    // 상속 is-a 관계  다른 객체에 주소값을 가질수 있으면 has-a 관계
+    private MyUser myUser; //JWT 에 사용할때 필요함  payload에 담을 데이터를 담은 객체
 
     @Override
     public Map<String, Object> getAttributes() {
@@ -27,11 +26,28 @@ public class MyUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-//        List<GrantedAuthority> list = new ArrayList();
+
+
+
+        //        List<GrantedAuthority> list = new ArrayList();
 //        list.add(new SimpleGrantedAuthority(role));
 //        return list;
-
-        return Collections.singletonList(new SimpleGrantedAuthority(myUser.getRole()));
+        // 단수 > 복수로 변경 (1 번)
+//        return Collections.singletonList(new SimpleGrantedAuthority(myUser.getRole()));
+    // (2)
+        // List<GrantedAuthority> list = new ArrayList<>();
+        //    for(String role : myUser.getRoles()){
+        //        list.add(new SimpleGrantedAuthority(role));
+        //        }
+        //            return list;
+        //    }
+        //(1), (2) 는 똑같음
+        //List<String> >> List<GrantedAuthority> 변경하는 작업
+        List<GrantedAuthority> list = new ArrayList<>();
+    for(String role : myUser.getRoles()){
+        list.add(new SimpleGrantedAuthority(role));
+        }
+            return list;
     }
 
     @Override

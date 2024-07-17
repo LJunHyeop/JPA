@@ -32,6 +32,7 @@ public class OAuth2AuthenticationSuccessHandler
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        // FE 가 소셜 로그인시 보내준 redirect_uri 값
         String targetUrl = determineTargetUrl(request, response, authentication);
         log.info("targetUrl: {}", targetUrl);
         if(response.isCommitted()) { //응답 객체가 만료된 경우(다른곳에서 응답처리를 한 경우)
@@ -49,7 +50,7 @@ public class OAuth2AuthenticationSuccessHandler
                                                  , String.class);
 
         // (yaml) app.oauth2.uthorized-redirect-uris 리스트에 없는 Uri인 경우
-        if(redirectUri != null && !hasAuthorizedRedirectUri(redirectUri)) {
+        if(redirectUri != null) {
             throw new IllegalArgumentException("인증되지 않은 Redirect URI입니다.");
         }
 
@@ -61,7 +62,7 @@ public class OAuth2AuthenticationSuccessHandler
         MyUserOAuth2Vo myUserOAuth2Vo = (MyUserOAuth2Vo)myUserDetails.getMyUser();
         MyUser myUser = MyUser.builder()
                 .userId(myUserOAuth2Vo.getUserId())
-                .role(myUserOAuth2Vo.getRole())
+                .roles(myUserOAuth2Vo.getRoles())
                 .build();
 
         String accessToken = jwtTokenProvider.generateAccessToken(myUser);
@@ -90,19 +91,5 @@ public class OAuth2AuthenticationSuccessHandler
         repository.removeAuthorizationRequestCookies(response);
     }
 
-    //우리가 설정한 redirect-uri인지 체크
-    private boolean hasAuthorizedRedirectUri(String uri) {
-        URI savedCookieRedirectUri = URI.create(uri);
-        log.info("savedCookieRedirectUri.getHost(): {}", savedCookieRedirectUri.getHost());
-        log.info("savedCookieRedirectUri.getPort(): {}", savedCookieRedirectUri.getPort());
 
-        for(String redirectUri : appProperties.getOauth2().getAuthorizedRedirectUris()) {
-            URI authorizedUri = URI.create(redirectUri);
-            if(savedCookieRedirectUri.getHost().equalsIgnoreCase(authorizedUri.getHost())
-                    && savedCookieRedirectUri.getPort() == authorizedUri.getPort()) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
