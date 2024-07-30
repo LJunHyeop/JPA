@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class MyUser1FollowIntegrationTest extends BaseIntegrationTest {
+public class UserFollowIntegrationTest extends BaseIntegrationTest {
     private String BASE_URL = "/api/user/follow";
     @Test
     @Rollback(false)

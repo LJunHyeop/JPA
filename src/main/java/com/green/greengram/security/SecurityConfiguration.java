@@ -1,5 +1,6 @@
 package com.green.greengram.security;
 
+import com.green.greengram.common.AppProperties;
 import com.green.greengram.security.jwt.JwtAuthenticationAccessDeniedHandler;
 import com.green.greengram.security.jwt.JwtAuthenticationEntryPoint;
 import com.green.greengram.security.jwt.JwtAuthenticationFilter;
@@ -12,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -24,7 +27,9 @@ public class SecurityConfiguration {
     private final OAuth2AuthenticationRequestBasedOnCookieRepository repository;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final MyOAuth2UserService myOAuth2UserService;
-    private  final OAuth2AuthenticationCheckRedirectUriFilter oAuth2AuthenticationCheckRedirectUriFilter;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final AppProperties appProperties;
+    private final OAuth2AuthenticationCheckRedirectUriFilter oAuth2AuthenticationCheckRedirectUriFilter;
     /*
       메소드 빈등록으로 주로쓰는 케이스는 (현재 기준으로 설명하면) Security와 관련된
       빈등록을 여러개 하고 싶을 때 메소드 형식으로 빈등록 하면 한 곳에 모을 수가 있으니 좋다.
@@ -49,50 +54,63 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable()) //CSRF (CORS랑 많이 헷갈려 함)
                 //requestMatchers
                 .authorizeHttpRequests(auth ->
-                    auth.
-                        requestMatchers("/api/feed").authenticated()
+                    auth
+                            .requestMatchers("/api/feed")
+                            .authenticated()
+
                             .requestMatchers(
-                              "/api/feed"
-                            , "/api/feed/*"
-                            , "/api/user/pic"
-                    )
-                    .authenticated()
-                    .requestMatchers("/api/admin/",
-                            "/api/admin/**"
-                            ).hasAnyRole("ADMIN,ADMINISTRATION")
+                                  "/api/feed/*"
+                                , "/api/user/pic"
+                                , "/api/user/follow"
+                            )
+                            .hasAnyRole("USER")
+
+                            .requestMatchers(
+                                  "/api/admin"
+                                , "/api/admin/**"
+                            )
+                            .hasAnyRole("ADMIN", "ADMINISTRATOR")
+
                             .anyRequest()
                             .permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint)
                                                          .accessDeniedHandler(new JwtAuthenticationAccessDeniedHandler())
                 )
                 .oauth2Login( oauth2 -> oauth2.authorizationEndpoint(
-                                            auth -> auth.baseUri("/oauth2/authorization")
+                                            auth -> auth.baseUri( appProperties.getOauth2().getBaseUri() )
                                                         .authorizationRequestRepository(repository)
-
                                         )
                         .redirectionEndpoint( redirection -> redirection.baseUri("/*/oauth2/code/*"))
                         .userInfoEndpoint(userInfo -> userInfo.userService(myOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
+                .addFilterBefore(oAuth2AuthenticationCheckRedirectUriFilter, OAuth2AuthorizationRequestRedirectFilter.class)
                 /*
                 OAuth2 처리 순서
-                 OAuth2LoginAuthenticationFilter, OAuth2AuthorizationRequestRedirectFilter
+
+                OAuth2LoginAuthenticationFilter, OAuth2AuthorizationRequestRedirectFilter
 
                 FE > registration 선택
-                > http: //localhost:8080/oauth2/authorization/${registrationId}?redirect_uri=${redirectUrl} 백엔드 요청
-                 (registrationId: 플랫폼 이름 ,redirectUrl: 소셜 로그인 완료 후 FE로 보내야 하는 주소값 )
-                 > (#) registration 에 요청을 보낼 정보를 정리해서 요청 객체 (Oauth2AuthorizationRequest) 생성
-                 > OAuth2AuthenticationRequestBasedOnCookieRepository - saveAuthorizationRequest 메소드 호출
-                   (쿠키에 요청 정보 저장 > 쿠키사용은 플랫폼과 통신을 여러번 하는동안 데이터 유지에 사용)
-                 >OAuth2AuthenticationRequestBaseOnCookieRepository - removeAuthorizationRequest 메소드 호출
-                 >OAuth2AuthenticationRequestBaseOnCookieRepository - loadAuthorizationRequest 메소드 호출
-                 (Access Token 받음 )
-                 >
-                 받았다 > Oauth2AuthenticationSuccessHandler - onAuthenticationSuccess 호출
-                 못 받았다 > Oauth2AuthenticationSuccessHandler - */
+                   > http://localhost:8080/oauth2/authorization/${registrationId}?redirect_uri=${redirectUrl} 백엔드 요청
+                     (registrationId: 플랫폼 이름,  redirectUrl: 소셜 로그인 완료 후 FE로 보내야하는 주소값
+                   > (#) registration에 요청을 보낼 정보를 정리해서 요청 객체(OAuth2AuthorizationRequest) 생성
+                   > OAuth2AuthenticationRequestBasedOnCookieRepository - saveAuthorizationRequest 메소드 호출
+                     (쿠키에 요청 정보, FE Redirect URL 저장 > 쿠키사용은 플랫폼과 통신을 여러번 하는동안 데이터 유지에 사용)
+                   > OAuth2AuthenticationRequestBasedOnCookieRepository - removeAuthorizationRequest 메소드 호출
+                   > OAuth2AuthenticationRequestBasedOnCookieRepository - loadAuthorizationRequest 메소드 호출
+                   (Access Token 받음)
+                   > OAuth2UserService - loadUser
+
+                   ( 사용자 정보 받았다 / 못 받았다 분기)
+                   받았다 > OAuth2AuthenticationSuccessHandler - onAuthenticationSuccess 호출
+                   못 받았다 >
+                 */
+
+
+
 
                 /*
                 //만약, permitAll메소드가 void였다면 아래와 같이 작성을 해야함
@@ -107,6 +125,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/ddd").authenticated();
                 })
                 */
+
 
                 .build();
 

@@ -7,10 +7,11 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper {
-     List<MyUser1> selTest(long userId);
+     List<User> selTest(long userId);
 
      int signUpPostReq(SignUpPostReq p);
-     List<MyUser1Info> signInPost(SignInPostReq p);
+     //User signInPost(SignInPostReq p);
+     List<UserInfo> signInPost(SignInPostReq p);
      UserInfoGetRes selProfileUserInfo(UserInfoGetReq p);
      int updProfilePic(UserProfilePatchReq p);
 }

@@ -8,10 +8,11 @@ import lombok.Setter;
 @Setter
 @Entity
 public class MainCode {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long mainCodeId;
 
-    @Column(length = 20 , nullable = false)
+    @Column(length = 20, nullable = false)
     private String cdName;
 
     @Column(length = 30)

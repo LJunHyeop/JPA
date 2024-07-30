@@ -9,7 +9,6 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class MyUser1InfoRoles extends MyUser1 {
+public class UserInfoRoles extends User {
     private List<String> roles;
-
 }

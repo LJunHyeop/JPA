@@ -1,6 +1,8 @@
 package com.green.greengram.security.oauth2;
 
+
 import com.green.greengram.common.MyCommonUtils;
+import com.green.greengram.security.MyUser;
 import com.green.greengram.security.MyUserDetails;
 import com.green.greengram.security.MyUserOAuth2Vo;
 import com.green.greengram.security.SignInProviderType;
@@ -71,31 +73,37 @@ public class MyOAuth2UserService extends DefaultOAuth2UserService {
         SignInPostReq signInParam = new SignInPostReq();
         signInParam.setUid(oAuth2UserInfo.getId()); //플랫폼에서 넘어오는 유니크값(항상 같은 값이며 다른 사용자와 구별되는 유니크 값)
         signInParam.setProviderType(signInProviderType.name());
-        List<MyUser1Info> userInfoList = mapper.signInPost(signInParam);
+        List<UserInfo> userInfoList = mapper.signInPost(signInParam);
 
-        MyUser1InfoRoles userInfoRoles = MyCommonUtils.convertToUserInfoRoles(userInfoList);
+        UserInfoRoles userInfoRoles = MyCommonUtils.convertToUserInfoRoles(userInfoList);
+
         if(userInfoRoles == null) { //회원가입 처리
             SignUpPostReq signUpParam = new SignUpPostReq();
             signUpParam.setProviderType(signInProviderType);
             signUpParam.setUid(oAuth2UserInfo.getId());
             signUpParam.setNm(oAuth2UserInfo.getName());
             signUpParam.setPic(oAuth2UserInfo.getProfilePicUrl());
-            userInfoRoles = new MyUser1InfoRoles();
+            int result = mapper.signUpPostReq(signUpParam);
+
+            userInfoRoles = new UserInfoRoles();
             userInfoRoles.setUserId(signUpParam.getUserId());
             userInfoRoles.setNm(signUpParam.getNm());
             userInfoRoles.setPic(signUpParam.getPic());
-        }else{ // 이미 회원가입이 되어있음
-            if(userInfoRoles.getPic() == null || !userInfoRoles.getPic().equals(oAuth2UserInfo.getProfilePicUrl())){
-                // 프로필 값이 변경이 되었다면 ?
-                //프로필 사진 변경 처리 (update)
-            }
 
+
+        } else { //이미 회원가입 되어 있었음
+            if(userInfoRoles.getPic() == null
+                    || (userInfoRoles.getPic().startsWith("http")
+                    && !userInfoRoles.getPic().equals(oAuth2UserInfo.getProfilePicUrl()))
+            ) { //프로필 값이 변경이 되었다면
+                //프로필 사진 변경처리(update)
+            }
         }
-        List<String> roles = new ArrayList<>();
+        List<String> roles = new ArrayList();
         roles.add("ROLE_USER");
 
         MyUserOAuth2Vo myUserOAuth2Vo
-                = new MyUserOAuth2Vo(userInfoRoles.getUserId(), userInfoRoles.getRoles(), userInfoRoles.getNm(), userInfoRoles.getPic()); //
+                = new MyUserOAuth2Vo(userInfoRoles.getUserId(), roles, userInfoRoles.getNm(), userInfoRoles.getPic());
 
         MyUserDetails signInUser = new MyUserDetails();
         signInUser.setMyUser(myUserOAuth2Vo);

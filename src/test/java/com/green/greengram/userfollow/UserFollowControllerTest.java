@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Import(CharEncodingConfiguration.class)
 @WebMvcTest(UserFollowControllerImpl.class)
-class MyUser1FollowControllerTest {
+class UserFollowControllerTest {
     @Autowired private ObjectMapper om;
     @Autowired private MockMvc mvc;
     @MockBean private UserFollowService service;

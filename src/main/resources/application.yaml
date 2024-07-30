@@ -15,11 +15,11 @@ spring:
     default-property-inclusion: non_null
   jpa:
     hibernate:
-      ddl-auto: create #entity(테이블)을 서버 기동때마다 새롭게 만든다
-    show-sql: true # JPA 만든 쿼리문 로그에 출력해줘
+      ddl-auto: create #entity(테이블)를 서버 기동때마다 drop 후 새롭게 만든다.
+    show-sql: true #JPA만든 쿼리문 로그에 출력해줘
     properties:
       hibernate:
-        format_sql: true # 로그 찍을때 보기편하게 포맷팅해서 출력해줘
+        format_sql: true #로그 찍을 때 보기편하게 포맷팅해서 출력해줘
 
   security:
     oauth2:
@@ -113,15 +113,16 @@ app:
     refresh-token-cookie-name: refresh-token
     refresh-token-expiry: 1_296_000_000
   oauth2:
+    base-uri: /oauth2/authorization
     authorization-request-cookie-name: oauth2_auth_request
     redirect-uri-param-cookie-name: redirect_uri
     cookie-expiry-seconds: 180
-    authorized-redirect-uris:
+    authorized-redirect-uris: #OAuth2 처리시 허용한 FE리다이렉트 주소값
       - http://localhost:3000/oauth/redirect
       - http://localhost:8080/oauth/redirect
       - http://192.168.0.144:5125/oauth/redirect #내부 도커서버 IP
       - http://112.222.157.156:5125/oauth/redirect #외부 IP
-    base-uri: /oauth2/authorization
+
 management:
   endpoint: #엔드포인트 (URL)
     health:
@@ -169,7 +170,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-
 file:
   directory: ${PROD.FILE_DIRECTORY}
 

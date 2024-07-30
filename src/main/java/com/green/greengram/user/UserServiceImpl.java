@@ -3,7 +3,9 @@ package com.green.greengram.user;
 import com.green.greengram.common.AppProperties;
 import com.green.greengram.common.CookieUtils;
 import com.green.greengram.common.CustomFileUtils;
-import com.green.greengram.common.MyCommonUtils;
+
+import com.green.greengram.entity.User;
+import com.green.greengram.entity.UserRole;
 import com.green.greengram.exception.CustomException;
 import com.green.greengram.exception.MemberErrorCode;
 import com.green.greengram.security.AuthenticationFacade;
@@ -12,7 +14,6 @@ import com.green.greengram.security.jwt.JwtTokenProviderV2;
 import com.green.greengram.security.MyUser;
 import com.green.greengram.security.MyUserDetails;
 import com.green.greengram.user.model.*;
-import com.green.greengram.entity.User;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,17 +42,20 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationFacade authenticationFacade;
     private final AppProperties appProperties;
     private final UserRepository repository;
+    private final UserRoleRepository userRoleRepository;
+
     //SecurityContextHolder > Context > Authentication(UsernamePasswordAuthenticationToken) > MyUserDetails > MyUser
 
     public int signUpPostReq(MultipartFile pic, SignUpPostReq p){
-        p.setProviderType( SignInProviderType.LOCAL );
+        //p.setProviderType( SignInProviderType.LOCAL );
         String saveFileName = customFileUtils.makeRandomFileName(pic);
 
         p.setPic(saveFileName);
         String password = passwordEncoder.encode(p.getUpw());
         //String password = BCrypt.hashpw(p.getUpw(),BCrypt.gensalt());
         p.setUpw(password);
-        User user = new User();
+
+        User user = new User(); //User 엔터티 직접 객체 생성 (영속성이 없는 상태)
         user.setProviderType(SignInProviderType.LOCAL);
         user.setUid(p.getUid());
         user.setUpw(password);
@@ -58,12 +63,12 @@ public class UserServiceImpl implements UserService {
         user.setPic(saveFileName);
 
         repository.save(user);
-//        int result = mapper.signUpPostReq(p);
+        //int result = mapper.signUpPostReq(p);
         if(pic == null){
             return 1;
         }
         try{
-            String path = String.format("user/%d", p.getUserId());
+            String path = String.format("user/%d", user.getUserId());
             customFileUtils.makeFolders(path);
             String target = String.format("%s/%s", path, saveFileName);
             customFileUtils.transferTo(pic, target);
@@ -75,19 +80,25 @@ public class UserServiceImpl implements UserService {
     }
 
     public SignInPostRes signInPost(HttpServletResponse res, SignInPostReq p) {
-        p.setProviderType(SignInProviderType.LOCAL.name());
+        //p.setProviderType(SignInProviderType.LOCAL.name());
         //p.setProviderType("LOCAL");
-        List<MyUser1Info> userInfo = mapper.signInPost(p);
-
-        MyUser1InfoRoles userInfoRoles = MyCommonUtils.convertToUserInfoRoles(userInfo);
-
-        if (userInfo == null || !passwordEncoder.matches(p.getUpw(), userInfoRoles.getUpw())) {
+        //1. 내가 시도하는 select 2번
+        User user = repository.findUserByProviderTypeAndUid(SignInProviderType.LOCAL, p.getUid());
+        if(user == null || !passwordEncoder.matches(p.getUpw(), user.getUpw())) { //아이디가 없거나 비밀번호가 다르거나
             throw new CustomException(MemberErrorCode.INCORRECT_ID_PW);
         }
+        List<UserRole> userRoleList = userRoleRepository.findAllByUser(user);
+        List<String> roles = new ArrayList();
+        for(UserRole userRole : userRoleList) {
+            roles.add(userRole.getRole());
+        }
+
+        //2. 내가 시도하는 select 1번
+
 
         MyUser myUser = MyUser.builder()
-                .userId(userInfoRoles.getUserId())
-                .roles(userInfoRoles.getRoles())
+                .userId(user.getUserId())
+                .roles(roles)
                 .build();
         /*
         access, refresh token에 myUser(유저pk, 권한정보)를 담는다.
@@ -106,9 +117,9 @@ public class UserServiceImpl implements UserService {
         cookieUtils.setCookie(res, appProperties.getJwt().getRefreshTokenCookieName(), refreshToken, refreshTokenMaxAge);
 
         return SignInPostRes.builder()
-                .userId(userInfoRoles.getUserId()) // 프로필 사진 띄울때 사용 (프로필 사진 주소에 PK 가 포함됨)
-                .nm(userInfoRoles.getNm())
-                .pic(userInfoRoles.getPic())
+                .userId(user.getUserId()) //프로필 사진 띄울때 사용 (프로필 사진 주소에 pk값이 포함됨)
+                .nm(user.getNm())
+                .pic(user.getPic())
                 .accessToken(accessToken)
                 .build();
     }
@@ -145,16 +156,19 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     public String patchProfilePic(UserProfilePatchReq p) {
-        p.setSignedUserId(authenticationFacade.getLoginUserId());
+        long signedUserId = authenticationFacade.getLoginUserId();
+        //p.setSignedUserId(authenticationFacade.getLoginUserId());
         String fileNm = customFileUtils.makeRandomFileName(p.getPic());
         log.info("saveFileName: {}", fileNm);
         p.setPicName(fileNm);
-        mapper.updProfilePic(p);
+        User user = repository.getReferenceById(signedUserId);
+        user.setPic(fileNm);
+        repository.save(user);
 
         //기존 폴더 삭제
         try {
             //  D:/2024-01/download/greengram_tdd/user/600
-            String midPath = String.format("user/%d", p.getSignedUserId());
+            String midPath = String.format("user/%d", signedUserId);
             String delAbsoluteFolderPath = String.format("%s/%s", customFileUtils.uploadPath, midPath);
             customFileUtils.deleteFolder(delAbsoluteFolderPath);
 

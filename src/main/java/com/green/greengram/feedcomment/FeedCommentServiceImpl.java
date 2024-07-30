@@ -1,5 +1,6 @@
 package com.green.greengram.feedcomment;
 
+import com.green.greengram.entity.FeedComment;
 import com.green.greengram.feedcomment.model.FeedCommentDeleteReq;
 import com.green.greengram.feedcomment.model.FeedCommentGetRes;
 import com.green.greengram.feedcomment.model.FeedCommentPostReq;
@@ -16,6 +17,7 @@ import java.util.List;
 public class FeedCommentServiceImpl implements FeedCommentService {
     private final FeedCommentMapper mapper;
     private final AuthenticationFacade authenticationFacade;
+    private final FeedCommentRepository repository;
 
     @Override
     public long postFeedComment(FeedCommentPostReq p) {
@@ -32,6 +34,7 @@ public class FeedCommentServiceImpl implements FeedCommentService {
 
     @Override
     public List<FeedCommentGetRes> feedCommentListGet(long feedId) {
+        List<FeedComment> list = repository.findFeedIdOrderByFeedCommentId(feedId);
         return mapper.feedCommentList(feedId);
     }
 }

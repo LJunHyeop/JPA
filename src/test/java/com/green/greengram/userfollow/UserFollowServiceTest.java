@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(SpringExtension.class)
 @Import({ UserFollowServiceImpl.class })
-class MyUser1FollowServiceTest {
+class UserFollowServiceTest {
 
     @MockBean
     private UserFollowMapper mapper;

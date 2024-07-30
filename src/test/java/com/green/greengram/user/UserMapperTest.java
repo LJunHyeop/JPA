@@ -1,6 +1,6 @@
 package com.green.greengram.user;
 
-import com.green.greengram.user.model.MyUser1;
+import com.green.greengram.user.model.User;
 import com.green.greengram.user.model.UserInfoGetReq;
 import com.green.greengram.user.model.UserInfoGetRes;
 import com.green.greengram.user.model.UserProfilePatchReq;
@@ -17,25 +17,25 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("tdd")
 @MybatisTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class MyUser1MapperTest {
+class UserMapperTest {
 
     @Autowired
     private UserMapper mapper;
 
     @Test
     void signInPost() {
-        MyUser1 myUser11 = mapper.signInPost("사용자1");
-        List<MyUser1> myUser1List1 = mapper.selTest(myUser11.getUserId());
-        MyUser1 myUser11Comp = myUser1List1.get(0);
-        assertEquals(myUser11Comp, myUser11);
+        User user1 = mapper.signInPost("사용자1");
+        List<User> userList1 = mapper.selTest(user1.getUserId());
+        User user1Comp = userList1.get(0);
+        assertEquals(user1Comp, user1);
 
-        MyUser1 myUser13 = mapper.signInPost("사용자3");
-        List<MyUser1> myUser1List3 = mapper.selTest(myUser13.getUserId());
-        MyUser1 myUser13Comp = myUser1List3.get(0);
-        assertEquals(myUser13Comp, myUser13);
+        User user3 = mapper.signInPost("사용자3");
+        List<User> userList3 = mapper.selTest(user3.getUserId());
+        User user3Comp = userList3.get(0);
+        assertEquals(user3Comp, user3);
 
-        MyUser1 myUser1No = mapper.signInPost("sdklsdfnkl");
-        assertNull(myUser1No, "없는 사용자 레코드 넘어옴");
+        User userNo = mapper.signInPost("sdklsdfnkl");
+        assertNull(userNo, "없는 사용자 레코드 넘어옴");
     }
 
     @Test
@@ -69,7 +69,7 @@ class MyUser1MapperTest {
     @Test
     void updProfilePicYou() {
         //수정 되기 전 전체 리스트 가져옴
-        List<MyUser1> beforeMyUser1List = mapper.selTest(0);
+        List<User> beforeUserList = mapper.selTest(0);
 
         long modUserId = 1;
         String picName1 = "test.jpg";
@@ -80,21 +80,21 @@ class MyUser1MapperTest {
 
         assertEquals(1, affectedRows);
 
-        List<MyUser1> myUser1List1 = mapper.selTest(modUserId);
-        MyUser1 myUser11 = myUser1List1.get(0);
+        List<User> userList1 = mapper.selTest(modUserId);
+        User user1 = userList1.get(0);
 
-        assertEquals(picName1, myUser11.getPic());
+        assertEquals(picName1, user1.getPic());
 
         //수정 된 후 전체 리스트 가져옴
-        List<MyUser1> afterMyUser1List = mapper.selTest(0);
+        List<User> afterUserList = mapper.selTest(0);
 
-        for(int i = 0; i< beforeMyUser1List.size(); i++) {
-            MyUser1 beforeMyUser1 = beforeMyUser1List.get(i);
-            if(beforeMyUser1.getUserId() == modUserId) {
-                assertNotEquals(beforeMyUser1, afterMyUser1List.get(i));
+        for(int i=0; i< beforeUserList.size(); i++) {
+            User beforeUser = beforeUserList.get(i);
+            if(beforeUser.getUserId() == modUserId) {
+                assertNotEquals(beforeUser, afterUserList.get(i));
                 continue;
             }
-            assertEquals(beforeMyUser1, afterMyUser1List.get(i));
+            assertEquals(beforeUser, afterUserList.get(i));
         }
 
 
@@ -102,7 +102,7 @@ class MyUser1MapperTest {
 
     @Test
     void updProfilePicNoUser() {
-        List<MyUser1> beforeMyUser1List = mapper.selTest(0);
+        List<User> beforeUserList = mapper.selTest(0);
 
         //없는 userId로 update 시도시 affectedRows 0이 넘어오는지 체크
         String picName1 = "test.jpg";
@@ -113,10 +113,10 @@ class MyUser1MapperTest {
 
         assertEquals(0, affectedRows);
 
-        List<MyUser1> afterMyUser1List = mapper.selTest(0);
+        List<User> afterUserList = mapper.selTest(0);
 
-        for(int i = 0; i< beforeMyUser1List.size(); i++) {
-            assertEquals(beforeMyUser1List.get(i), afterMyUser1List.get(i));
+        for(int i=0; i< beforeUserList.size(); i++) {
+            assertEquals(beforeUserList.get(i), afterUserList.get(i));
         }
     }
 }

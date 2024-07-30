@@ -1,13 +1,11 @@
 package com.green.greengram.admin.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
-public class GetApiAdminRes {
+@AllArgsConstructor
+public class GroupByProviderCountRes {
     private String provider;
     private int count;
-
-
 }

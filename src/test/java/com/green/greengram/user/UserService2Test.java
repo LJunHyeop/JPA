@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
             "file.directory=D:/2024-01/download/greengram_tdd/"
     }
 )
-public class MyUser1Service2Test {
+public class UserService2Test {
     @Value("${file.directory}") String uploadPath;
     @MockBean UserMapper mapper;
     @MockBean CustomFileUtils customFileUtils;

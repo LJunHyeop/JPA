@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 
 @Setter
 @Getter
-@MappedSuperclass // 애가 부모가 될꺼임 맵핑가능하게
-@EntityListeners(AuditingEntityListener.class)
+@MappedSuperclass //부모클래스랑 맵핑 가능하게 (상속으로 사용가능하게)
+@EntityListeners(AuditingEntityListener.class) //auditing 이벤트 바인딩
 public class CreatedAt {
 
     @Column(nullable = false)
-    @CreatedDate // JPA 가 insert 때 현재 일시 값을 주입
+    @CreatedDate //JPA가 insert때 현재일시 값을 주입 (default current_timestamp() 속성을 추가하는 것이 아님)
     private LocalDateTime createdAt;
 }
